@@ -3,9 +3,9 @@ ColorSelect {
     grid-gutter: 1;
     padding: 0 0;
     keyline: thin $border;
-    width: 82;
-    height: 30;
-    grid-rows: 7 6 3 3 3 3;
+    width: 90;
+    height: 34;
+    grid-rows: 7 9 3 3 3 3;
 }
 
 Static {
