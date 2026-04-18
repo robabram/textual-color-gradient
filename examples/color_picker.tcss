@@ -1,0 +1,83 @@
+ColorSelect {
+    grid-size: 4 7;
+    grid-gutter: 1;
+    padding: 0 0;
+    keyline: thin $border;
+    width: 90;
+    height: 34;
+    grid-rows: 7 9 3 3 3;
+    # grid-rows: 7 9 3 3 3 3;
+}
+
+Static {
+    color: auto;
+    padding: 0 0;
+    height: 100%
+}
+
+.hidden {
+    visibility: hidden;
+}
+
+ColorGradient {
+    column-span: 4;
+    row-span: 2;
+}
+
+#cs-color-box {
+    row-span: 2;
+    column-span: 1;
+}
+
+ColorSelectHSVControls {
+    grid-size: 4 1;
+    grid-gutter: 0;
+    padding: 0 0;
+    height: 100%;
+    column-span: 3;
+}
+
+ColorSelectRGBControls {
+    grid-size: 4 1;
+    grid-gutter: 0;
+    padding: 0 0;
+    height: 100%;
+    column-span: 3;
+}
+
+#cs-hsv-labels {
+    height: 100%;
+}
+
+#cs-hsv-controls {
+    column-span: 4;
+    height: 100%;
+}
+
+#cs-hsv-group {
+    column-span: 4;
+}
+
+#cs-rgb-controls {
+    column-span: 4;
+    height: 100%;
+}
+
+#cs-rgb-group {
+    column-span: 4;
+}
+
+#cs-hsv-slider-hue {
+}
+
+#cs-rgb-group {
+    column-span: 4;
+}
+
+#cs-rgb-val-group-1 {
+}
+
+# cs-buttons-group {
+#     column-span: 4;
+# }
+
