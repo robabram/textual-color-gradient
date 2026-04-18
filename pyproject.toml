@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "textual-color-gradient"
+version = "0.99.1"
+requires-python = ">= 3.8"
+license = "MIT"
+description = "Color gradient color select widget for the Textual UI platform"
+authors = [
+    { name = "Robert Abram", email = "rabram991@gmail.com" },
+]
+dependencies = [
+    "textual",
+]
+readme = "README.md"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: Microsoft :: Windows :: Windows 10",
+    "Operating System :: Microsoft :: Windows :: Windows 11",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+keywords = [
+    "textual",
+    "terminal",
+    "widget",
+    "color",
+    "gradient",
+    "ui",
+    "control"
+]
+
+[project.optional-dependencies]
+dev = [
+    "build",
+    "pytest",
+    "pytest-asyncio",
+    "coverage",
+]
+
+[project.urls]
+Homepage = "https://github.com/robabram/textual-color-gradient"
+Repository = "https://github.com/robabram/textual-color-gradient"
+Changelog = "https://github.com/robabram/textual-color-gradient"
+Issues = "https://github.com/robabram/textual-color-gradient/issues"
+
+
+# PyTest configuration
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+]

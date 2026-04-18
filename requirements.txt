@@ -1,0 +1,8 @@
+# Required libraries
+textual
+
+# Development, build or testing libraries
+# build
+# pytest
+# pytest-asyncio
+# coverage

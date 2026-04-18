@@ -3,28 +3,93 @@
 # file 'LICENSE', which is part of this source code package.
 #
 import colorsys
-from math import ceil, floor
-from typing import ClassVar, Any
+from math import ceil
+from typing import ClassVar, Any, Type
 
-from rich.color import Color
+from rich.color import Color as RichColor
 from rich.segment import Segment
 from rich.style import Style
+from textual import events
 from textual.binding import Binding
+from textual.color import HSV, Color
+from textual.geometry import clamp
 from textual.message import Message
 from textual.reactive import reactive
 from textual.strip import Strip
 from textual.widget import Widget
 
-_CV_RANGE_MIN = 0
-_CV_RANGE_MAX = 255
+GRADIENT_RANGE_MIN = 0
+GRADIENT_RANGE_MAX = 255
 
+_MOVE_OFFSET = 1 / GRADIENT_RANGE_MAX
+_INITIAL_HSV = (0.0, 121 / GRADIENT_RANGE_MAX, 131 / GRADIENT_RANGE_MAX)
+
+
+class ColorGradientRenderer:
+
+    GLYPH: ClassVar[str] = '▀'
+
+    @classmethod
+    def _hsv_to_rgb(cls, hue: int, sat: int, val: int) -> tuple:
+        """
+        Convert HSV values in the range of 0-255 to RGB values
+        :return: Tuple of RGB values in the range of 0-255
+        """
+        return tuple(round(i * GRADIENT_RANGE_MAX) for i in colorsys.hsv_to_rgb(
+            hue / GRADIENT_RANGE_MAX,
+            sat / GRADIENT_RANGE_MAX,
+            val / GRADIENT_RANGE_MAX
+        ))
+
+    @classmethod
+    def _gradient_gen(cls, y: int, hue: int, sat: int, val: int, width: int, height: int, target: bool) -> list[Any]:
+        """ Calculate the H, S and V values for each cell of the gradient square """
+        horz_step = GRADIENT_RANGE_MAX / width
+        vert_step = GRADIENT_RANGE_MAX / height
+        val_1 = GRADIENT_RANGE_MAX - ceil(y * vert_step)
+        val_2 = GRADIENT_RANGE_MAX - ceil((y + 0.5) * vert_step)
+        target_x = clamp(round(sat / horz_step), 0, width - 1)
+        target_y = clamp(round((GRADIENT_RANGE_MAX - val) / (vert_step / 2)), 0, (height * 2) - 1)
+        # Vary the target point color to contrast the background
+        target_clr = tuple([clamp(0 + (target_y * vert_step), 0, 255)] * 3)
+        segments = list()
+        for x in range(width):
+            sat = ceil(x * horz_step)
+            # Check foreground/background for target match
+            use_target_fgcolor = target and x == target_x and (y * 2) == target_y
+            use_target_bgcolor = target and x == target_x and (y * 2) == (target_y - 1)
+            fgcolor = target_clr if use_target_fgcolor else cls._hsv_to_rgb(hue, sat, val_1)
+            bgcolor = target_clr if use_target_bgcolor else cls._hsv_to_rgb(hue, sat, val_2)
+
+            segments.append(
+                Segment(
+                    cls.GLYPH,
+                    Style(
+                        color=RichColor.from_rgb(*fgcolor),
+                        bgcolor=RichColor.from_rgb(*bgcolor)
+                    )
+                )
+            )
+        return segments
+
+    def render_line_segment(self, hsv: HSV, y: int, width: int, height: int, target: bool = True) -> list[Segment]:
+        return self._gradient_gen(
+            y,
+            round(hsv.h * GRADIENT_RANGE_MAX),
+            round(hsv.s * GRADIENT_RANGE_MAX),
+            round(hsv.v * GRADIENT_RANGE_MAX),
+            width, height,
+            target
+        )
 
 
 class ColorGradient(Widget, can_focus=True):
     """
     A Textual color gradient color chooser control widget.
     """
-    GLYPH: ClassVar[str] = '▀'
+    renderer_cls: ClassVar[Type[ColorGradientRenderer]] = ColorGradientRenderer
+    renderer: ColorGradientRenderer
+
     # Prevent user from selecting text within the widget
     ALLOW_SELECT = False
 
@@ -35,129 +100,75 @@ class ColorGradient(Widget, can_focus=True):
         Binding("down", "move_down", "Move Down", show=False),
     ]
 
-    # Currently selected RGB values
-    red: int = 0
-    green: int = 0
-    blue: int = 0
-    # Currently selected HSV values. Range: 0-255.
-
-    hue: reactive[int] = reactive(0)
-    sat: reactive[int] = reactive(127)
-    val: reactive[int] = reactive(127)
-
-    box_width: int = 0
-    box_height: int = 0
-
     COMPONENT_CLASSES = {"color-picker-gradient--color-picker-gradient"}
+
+    value: reactive[HSV] = reactive(HSV(*_INITIAL_HSV), init=False)
+
+    def watch_value(self) -> None:
+        self.post_message(self.Changed(self, self.value))
+
+    def to_color(self) -> Color:
+        return Color.from_hsv(self.value)
 
     class Changed(Message):
         """
         Posted when the value of the gradient changes.
         This message can be handled using an `on_gradient_changed` method.
         """
-        def __init__(self, color_manager: ColorGradient, red: int, green: int, blue: int, hue: int, sat: int,
-                            val: int) -> None:
+        def __init__(self, color_manager: ColorGradient, hsv: HSV) -> None:
             super().__init__()
-            self.red: int = red
-            self.green: int = green
-            self.blue: int = blue
-            self.hue: int = hue
-            self.sat: int = sat
-            self.val: int = val
-            self.color_gradient: ColorGradient = color_manager
+            self.hsv = hsv
+            self.__control__: ColorGradient = color_manager
 
         @property
         def control(self) -> ColorGradient:
-            return self.color_gradient
+            return self.__control__
 
     # -- ------------------------------------------------------------
 
-    def __init__(self, red: int = 128, green: int = 0, blue: int = 0, box_width: int = 59, box_height: int = 14, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.red = red
-        self.green = green
-        self.blue = blue
-        self.box_width = max(20, box_width)
-        self.box_height = max(20, box_height)
+    def __init__(self, value: HSV | None = None, name: str | None = None, id: str | None = None,
+                 classes: str | None = None, disabled: bool = False) -> None:
+        super().__init__(name=name, id=id, classes=classes, disabled=disabled, markup=False)
+        self.value = value if value is not None else HSV(*_INITIAL_HSV)
+        self.renderer = ColorGradientRenderer()
 
-    @classmethod
-    def hsv2rgb(cls, h: float, s: float, v: float) -> tuple:
-        return tuple(round(i * _CV_RANGE_MAX) for i in colorsys.hsv_to_rgb(
-            (h / _CV_RANGE_MAX),
-            (s / _CV_RANGE_MAX),
-            (v / _CV_RANGE_MAX))
-        )
+    def _on_mount(self, event: events.Mount) -> None:
+        pass
 
-    @classmethod
-    def _gradient_gen(cls, y: int, hue: int, sat: int, val: int, width: int, height: int) -> list[Any]:
-        """ Calculate the H, S and V values for each cell of the gradient square """
-        horz_step = _CV_RANGE_MAX / width
-        vert_step = _CV_RANGE_MAX / height
-        val_1 = _CV_RANGE_MAX - ceil(y * vert_step)
-        val_2 = _CV_RANGE_MAX - ceil((y + 0.5) * vert_step)
-
-        target_x = max(0, min(width, round(val / horz_step))) - 1
-        target_y = max(0, min((2 * height) - 1, floor(sat / (vert_step / 2))))
-
-        segments = list()
-        target_clr = (225, 225, 225) if target_y > round(height * 0.75) else (30, 30, 30)
-
-        for x in range(width):
-            sat = ceil(x * horz_step)
-            # Check foreground/background for target match
-            fgcolor = target_clr if x == target_x and (y * 2) == target_y else cls.hsv2rgb(hue, sat, val_1)
-            bgcolor = target_clr if x == target_x and (y * 2) == (target_y - 1) else cls.hsv2rgb(hue, sat, val_2)
-
-            segments.append(
-                Segment(
-                    cls.GLYPH,
-                    Style(
-                        color=Color.from_rgb(*fgcolor),
-                        bgcolor=Color.from_rgb(*bgcolor)
-                    )
-                )
-            )
-        return segments
 
     def render_line(self, y: int) -> Strip:
         """Render a line of the widget. y is relative to the top of the widget."""
-        segments = self._gradient_gen(y, self.hue, self.sat, self.val, self.size.width, self.size.height)
-        return Strip(segments, self.size.width)
+        return Strip(self.renderer.render_line_segment(self.value, y, self.content_size.width,
+                                                       self.content_size.height), self.size.width)
 
-    def update_hsv(self, hue: int = None, sat: int = None, val: int = None):
-        self.hue = hue if hue is not None else self.hue
-        self.sat = sat if sat is not None else self.sat
-        self.val = val if val is not None else self.val
-        self.red, self.green, self.blue = self.hsv2rgb(self.hue, self.sat, self.val)
+    async def action_move_up(self) -> None:
+        hsv = HSV(self.value.h, self.value.s, clamp(float(self.value.v) + _MOVE_OFFSET, 0.0, 1.0))
+        if hsv != self.value:
+            self.value = hsv
 
-    def update_rgb(self, red: int = None, green: int = None, blue: int = None):
-        self.red = red if red is not None else self.red
-        self.green = green if green is not None else self.green
-        self.blue = blue if blue is not None else self.blue
-        self.hue, self.sat, self.val = colorsys.rgb_to_hsv(self.red, self.green, self.blue)
-        self.render()
+    async def action_move_down(self) -> None:
+        hsv = HSV(self.value.h, self.value.s, clamp(float(self.value.v) - _MOVE_OFFSET, 0.0, 1.0))
+        if hsv != self.value:
+            self.value = hsv
 
-    # TODO: Event messages are causing crashes
-    # def watch_hue(self):
-    #     self.red, self.green, self.blue = self.hsv2rgb(self.hue, self.sat, self.val)
-    #     self.post_message(self.Changed(self, self.red, self.green, self.blue, self.hue, self.sat, self.val))
-    #
-    # def watch_sat(self):
-    #     self.red, self.green, self.blue = self.hsv2rgb(self.hue, self.sat, self.val)
-    #     self.post_message(self.Changed(self, self.red, self.green, self.blue, self.hue, self.sat, self.val))
-    #
-    # def watch_val(self):
-    #     self.red, self.green, self.blue = self.hsv2rgb(self.hue, self.sat, self.val)
-    #     self.post_message(self.Changed(self, self.red, self.green, self.blue, self.hue, self.sat, self.val))
+    async def action_move_left(self) -> None:
+        hsv = HSV(self.value.h, clamp(float(self.value.s) - _MOVE_OFFSET, 0.0, 1.0), self.value.v)
+        if hsv != self.value:
+            self.value = hsv
 
-    def action_move_left(self) -> None:
-        self.val = max(0, min(_CV_RANGE_MAX, self.val - 1))
+    async def action_move_right(self) -> None:
+        hsv = HSV(self.value.h, clamp(float(self.value.s) + _MOVE_OFFSET, 0.0, 1.0), self.value.v)
+        if hsv != self.value:
+            self.value = hsv
 
-    def action_move_right(self) -> None:
-        self.val = max(0, min(_CV_RANGE_MAX, self.val + 1))
+    async def _on_mouse_up(self, event: events.MouseUp) -> None:
+        event.stop()
+        color = self.renderer.render_line_segment(self.value, event.y, self.content_size.width,
+                                                       self.content_size.height, False)[event.x].style.color
+        self.value = HSV(*colorsys.rgb_to_hsv(
+            color.triplet.red / GRADIENT_RANGE_MAX,
+            color.triplet.green / GRADIENT_RANGE_MAX,
+            color.triplet.blue / GRADIENT_RANGE_MAX
+        ))
 
-    def action_move_up(self) -> None:
-        self.sat = max(0, min(_CV_RANGE_MAX, self.sat - 1))
 
-    def action_move_down(self) -> None:
-        self.sat = max(0, min(_CV_RANGE_MAX, self.sat + 1))
