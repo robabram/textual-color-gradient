@@ -72,7 +72,7 @@ class ColorGradientRenderer:
             )
         return segments
 
-    def render_line_segment(self, hsv: HSV, y: int, width: int, height: int, target: bool = True) -> list[Segment]:
+    def render_line_segment(self, hsv: HSV, y: int, width: int, height: int, target: bool = True) -> List[Segment]:
         return self._gradient_gen(
             y,
             round(hsv.h * GRADIENT_RANGE_MAX),
