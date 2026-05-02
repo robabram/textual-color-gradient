@@ -4,7 +4,7 @@
 #
 import colorsys
 from math import ceil
-from typing import ClassVar, Any, Type
+from typing import ClassVar, Any, Type, Union
 
 from rich.color import Color as RichColor
 from rich.segment import Segment
@@ -126,8 +126,8 @@ class ColorGradient(Widget, can_focus=True):
 
     # -- ------------------------------------------------------------
 
-    def __init__(self, value: HSV | None = None, name: str | None = None, id: str | None = None,
-                 classes: str | None = None, disabled: bool = False) -> None:
+    def __init__(self, value: Union[HSV, None] = None, name: Union[str, None] = None, id: Union[str, None] = None,
+                 classes: Union[str, None] = None, disabled: bool = False) -> None:
         super().__init__(name=name, id=id, classes=classes, disabled=disabled, markup=False)
         self.value = value if value is not None else HSV(*_INITIAL_HSV)
         self.renderer = ColorGradientRenderer()
