@@ -4,7 +4,7 @@
 #
 import colorsys
 from math import ceil
-from typing import ClassVar, Any, Type, Union
+from typing import ClassVar, Any, Type, Union, List
 
 from rich.color import Color as RichColor
 from rich.segment import Segment
@@ -42,7 +42,7 @@ class ColorGradientRenderer:
         ))
 
     @classmethod
-    def _gradient_gen(cls, y: int, hue: int, sat: int, val: int, width: int, height: int, target: bool) -> list[Any]:
+    def _gradient_gen(cls, y: int, hue: int, sat: int, val: int, width: int, height: int, target: bool) -> List[Any]:
         """ Calculate the H, S and V values for each cell of the gradient square """
         horz_step = GRADIENT_RANGE_MAX / width
         vert_step = GRADIENT_RANGE_MAX / height
