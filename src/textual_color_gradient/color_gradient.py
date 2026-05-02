@@ -115,13 +115,13 @@ class ColorGradient(Widget, can_focus=True):
         Posted when the value of the gradient changes.
         This message can be handled using an `on_gradient_changed` method.
         """
-        def __init__(self, color_manager: ColorGradient, hsv: HSV) -> None:
+        def __init__(self, color_manager: "ColorGradient", hsv: HSV) -> None:
             super().__init__()
             self.hsv = hsv
-            self.__control__: ColorGradient = color_manager
+            self.__control__: "ColorGradient" = color_manager
 
         @property
-        def control(self) -> ColorGradient:
+        def control(self) -> "ColorGradient":
             return self.__control__
 
     # -- ------------------------------------------------------------
