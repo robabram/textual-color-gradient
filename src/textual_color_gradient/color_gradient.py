@@ -108,7 +108,7 @@ class ColorGradient(Widget, can_focus=True):
         self.post_message(self.Changed(self, self.value))
 
     def to_color(self) -> Color:
-        return Color.from_hsv(self.value)
+        return Color.from_hsv(*self.value)
 
     class Changed(Message):
         """
