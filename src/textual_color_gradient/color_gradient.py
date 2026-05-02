@@ -4,7 +4,7 @@
 #
 import colorsys
 from math import ceil
-from typing import ClassVar, Any, Type
+from typing import ClassVar, Any, Type, Union, List
 
 from rich.color import Color as RichColor
 from rich.segment import Segment
@@ -42,7 +42,7 @@ class ColorGradientRenderer:
         ))
 
     @classmethod
-    def _gradient_gen(cls, y: int, hue: int, sat: int, val: int, width: int, height: int, target: bool) -> list[Any]:
+    def _gradient_gen(cls, y: int, hue: int, sat: int, val: int, width: int, height: int, target: bool) -> List[Any]:
         """ Calculate the H, S and V values for each cell of the gradient square """
         horz_step = GRADIENT_RANGE_MAX / width
         vert_step = GRADIENT_RANGE_MAX / height
@@ -72,7 +72,7 @@ class ColorGradientRenderer:
             )
         return segments
 
-    def render_line_segment(self, hsv: HSV, y: int, width: int, height: int, target: bool = True) -> list[Segment]:
+    def render_line_segment(self, hsv: HSV, y: int, width: int, height: int, target: bool = True) -> List[Segment]:
         return self._gradient_gen(
             y,
             round(hsv.h * GRADIENT_RANGE_MAX),
@@ -108,26 +108,26 @@ class ColorGradient(Widget, can_focus=True):
         self.post_message(self.Changed(self, self.value))
 
     def to_color(self) -> Color:
-        return Color.from_hsv(self.value)
+        return Color.from_hsv(*self.value)
 
     class Changed(Message):
         """
         Posted when the value of the gradient changes.
         This message can be handled using an `on_gradient_changed` method.
         """
-        def __init__(self, color_manager: ColorGradient, hsv: HSV) -> None:
+        def __init__(self, color_manager: "ColorGradient", hsv: HSV) -> None:
             super().__init__()
             self.hsv = hsv
-            self.__control__: ColorGradient = color_manager
+            self.__control__: "ColorGradient" = color_manager
 
         @property
-        def control(self) -> ColorGradient:
+        def control(self) -> "ColorGradient":
             return self.__control__
 
     # -- ------------------------------------------------------------
 
-    def __init__(self, value: HSV | None = None, name: str | None = None, id: str | None = None,
-                 classes: str | None = None, disabled: bool = False) -> None:
+    def __init__(self, value: Union[HSV, None] = None, name: Union[str, None] = None, id: Union[str, None] = None,
+                 classes: Union[str, None] = None, disabled: bool = False) -> None:
         super().__init__(name=name, id=id, classes=classes, disabled=disabled, markup=False)
         self.value = value if value is not None else HSV(*_INITIAL_HSV)
         self.renderer = ColorGradientRenderer()

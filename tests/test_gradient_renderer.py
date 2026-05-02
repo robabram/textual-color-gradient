@@ -2,10 +2,8 @@
 # This file is subject to the terms and conditions defined in the
 # file 'LICENSE', which is part of this source code package.
 #
-import colorsys
-from textual.color import HSV, Color
-from src.textual_color_gradient.color_gradient import (ColorGradient, ColorGradientRenderer, GRADIENT_RANGE_MIN,
-                                                       GRADIENT_RANGE_MAX)
+from textual.color import HSV
+from src.textual_color_gradient.color_gradient import ColorGradientRenderer, GRADIENT_RANGE_MIN, GRADIENT_RANGE_MAX
 
 
 TEST_HSV = (0.0, 121 / GRADIENT_RANGE_MAX, 131 / GRADIENT_RANGE_MAX)

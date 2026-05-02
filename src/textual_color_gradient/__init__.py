@@ -4,10 +4,9 @@
 #
 from .color_gradient import ColorGradient, ColorGradientRenderer, GRADIENT_RANGE_MAX, GRADIENT_RANGE_MIN
 
-
 __all__ = [
-    ColorGradient,
-    ColorGradientRenderer,
-    GRADIENT_RANGE_MAX,
-    GRADIENT_RANGE_MIN,
+    "ColorGradient",
+    "ColorGradientRenderer",
+    "GRADIENT_RANGE_MAX",
+    "GRADIENT_RANGE_MIN",
 ]
